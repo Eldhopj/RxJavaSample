@@ -11,6 +11,7 @@ import butterknife.ButterKnife;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
@@ -18,7 +19,9 @@ import io.reactivex.schedulers.Schedulers;
 /**
  * Commit 1:
  * Introduction to Observables and Observers
- * 
+ * Commit 2:
+ * Disposables : Use this when there's no point in listening to a reactive data stream if it's no longer needed.
+ *              Marking something as disposable makes it easy to remove observers from an observable.
  *
  */
 
@@ -31,7 +34,8 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.seekBar)
     SeekBar seekBar;
 
-    Observable<Task> taskObservable;
+    private Observable<Task> taskObservable;
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +56,10 @@ public class MainActivity extends AppCompatActivity {
          */
         taskObservable = Observable // NOTE : eventhow its a List<Task> we give only its dataType <Task>
                 .fromIterable(DataSource.createTasksList()) // Pass a data set and turn it into observable
+                /*  io():Typically this is used for network calls, it Creates and returns a Scheduler intended for IO-bound work. Again it’s bounded like computation.
+                    newThread(): Creates a new Thread for each unit of work. This is costly since it creates a separate thread everytime.
+                    trampoline(): Useful for queueing operations. This runs the tasks on the current thread. So it’ll run your code after the current task on the thread is complete.
+                *   computation(): For processing huge data, bitmap processing et. This should be used for parallel work since the thread pool is bound. I/O operations shouldn’t be done here.*/
                 .subscribeOn(Schedulers.io()) // worker thread (background). Anybody who want's to see the result subscribe on this thread
                 .filter(new Predicate<Task>() { // Another background operator doing different job ,NOTE : there are a bunch of different operators to do different jobs
                     @Override
@@ -74,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSubscribe(Disposable d) {
                 Log.d(TAG, "onSubscribe: ");
+
+                disposable.add(d); // Add into disposable
             }
 
             //The onNext() method will run on the main thread so the task objects can be set to the UI there
@@ -94,7 +104,22 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        /**If we want to collect disposable out of box, Use Consumer insted of Observer it will return disposable out of the box*/
+//       disposable.add(
+//               taskObservable.subscribe(new Consumer<Task>() {
+//           @Override
+//           public void accept(Task task) throws Exception {
+//
+//           }
+//       }));
+
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        disposable.clear(); // Clearing all disposables
+    }
+//    NOTE :If u are using mvvm use onCleared() method insted of onDestroy
 }
 
