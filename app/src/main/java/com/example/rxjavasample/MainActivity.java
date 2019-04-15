@@ -17,11 +17,18 @@ import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 /**
- * Commit 1:
+ * Lesson 1:
  * Introduction to Observables and Observers
- * Commit 2:
+ * Lesson 2:
  * Disposables : Use this when there's no point in listening to a reactive data stream if it's no longer needed.
  *              Marking something as disposable makes it easy to remove observers from an observable.
+ * Lesson 3:
+ * Operators : Make a dataSet into a observable dataSet. Some operators manipulate (Transform) the dataSet
+ *      Creating Operators : eg: create(), just(), fromArray(), range(), fromIterable() .......
+ *      Filtering Operators : filter(), skip(), skipLast() ect...
+ *      Combining Operators : concat(), merge() ect..
+ *                            Visit for more detail on Filtering and Combining Operators : https://medium.com/@kevalpatel2106/what-should-you-know-about-rx-operators-54716a16b310
+ *      Transforming Operators: map(), flatMap(), switchMap(), buffer(), concatMap()
  *
  */
 
@@ -43,8 +50,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        createAnObservable();
-        subscribeToObservable();
+        createAnObservable(); // Observable
+        subscribeToObservable(); // Observer
     }
 
     private void createAnObservable() {
@@ -61,14 +68,10 @@ public class MainActivity extends AppCompatActivity {
                     trampoline(): Useful for queueing operations. This runs the tasks on the current thread. So it’ll run your code after the current task on the thread is complete.
                 *   computation(): For processing huge data, bitmap processing et. This should be used for parallel work since the thread pool is bound. I/O operations shouldn’t be done here.*/
                 .subscribeOn(Schedulers.io()) // worker thread (background). Anybody who want's to see the result subscribe on this thread
-                .filter(new Predicate<Task>() { // Another background operator doing different job ,NOTE : there are a bunch of different operators to do different jobs
+                .filter(new Predicate<Task>() { // Used to filter the result ,NOTE : there are a bunch of different operators to do different jobs
                     @Override
-                    public boolean test(Task task) throws Exception {
-                        for (int i = 0; i <5 ; i++) {
-                            Thread.sleep(1000);
-                            Log.d(TAG, "Filter Background Thread: "+ i);
-                        }
-                        return task.isComplete(); // It execute when ever a task completed
+                    public boolean test(Task task) {
+                        return task.getPriority() == 1; //Shows only result which has priority 1
                     }
                 })
                 .observeOn(AndroidSchedulers.mainThread()); // Shows results on observer thread (main thread)
